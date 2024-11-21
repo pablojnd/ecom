@@ -8,10 +8,11 @@ use Filament\Support\Contracts\HasIcon;
 
 enum PayMethod: string implements HasLabel, HasColor, HasIcon
 {
-    case Cash = 'cash';
-    case Debit = 'debit';
-    case Credit = 'credit';
-    case Transfer = 'transfer';
+    case CASH = 'cash';
+    case DEBIT = 'debit';
+    case CREDIT = 'credit';
+    case TRANSFER = 'transfer';
+    case WEBPAY = 'webpay';
 
     public static function toArray(): array
     {
@@ -21,30 +22,31 @@ enum PayMethod: string implements HasLabel, HasColor, HasIcon
     public function getLabel(): ?string
     {
         return match ($this) {
-            self::Cash => 'cash',
-            self::Debit => 'debit',
-            self::Credit => 'credit',
-            self::Transfer => 'transfer',
+            self::CASH => 'EFECTIVO',
+            self::DEBIT => 'DEBITOO',
+            self::CREDIT => 'CREDITO',
+            self::TRANSFER => 'TRANSFERENCIA',
+            self::WEBPAY => 'WEBPAY',
         };
     }
 
     public function getColor(): string
     {
         return match ($this) {
-            self::Cash => 'success',
-            self::Debit => 'primary',
-            self::Credit => 'secondary',
-            self::Transfer => 'info',
+            self::CASH => 'success',
+            self::DEBIT => 'primary',
+            self::CREDIT => 'secondary',
+            self::TRANSFER => 'info',
         };
     }
 
     public function getIcon(): ?string
     {
         return match ($this) {
-            self::Cash => 'heroicon-o-banknotes',
-            self::Debit => 'heroicon-o-credit-card',
-            self::Credit => 'heroicon-o-credit-card',
-            self::Transfer => 'heroicon-o-switch-horizontal',
+            self::CASH => 'heroicon-o-banknotes',
+            self::DEBIT => 'heroicon-o-credit-card',
+            self::CREDIT => 'heroicon-o-credit-card',
+            self::TRANSFER => 'heroicon-o-switch-horizontal',
         };
     }
 }
