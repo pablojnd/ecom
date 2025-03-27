@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use BinaryCats\Sku\HasSku;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Illuminate\Database\Eloquent\Model;
@@ -9,10 +10,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use BinaryCats\Sku\Concerns\SkuOptions;
 
 class Product extends Model
 {
-    use HasFactory, HasUlids, HasSlug;
+    use HasFactory, HasUlids, HasSlug, HasSku;
 
     protected $fillable = [
         'brand_id',
@@ -20,10 +22,20 @@ class Product extends Model
         'name',
         'slug',
         'price',
+        'offer_price',
         'description',
         'image_path',
         'stock_quantity',
         'sku',
+        'is_active',
+        'offer_expires_at',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'offer_expires_at' => 'datetime',
+        'price' => 'decimal:2',
+        'offer_price' => 'decimal:2',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -31,6 +43,22 @@ class Product extends Model
         return SlugOptions::create()
             ->generateSlugsFrom('name')
             ->saveSlugsTo('slug');
+    }
+
+    /**
+     * Opciones de configuración para la generación de SKU
+     *
+     * @return SkuOptions
+     */
+    public function skuOptions(): SkuOptions
+    {
+        return SkuOptions::make()
+            ->from('name')
+            ->target('sku')
+            ->using('-')
+            ->forceUnique(true)
+            ->generateOnCreate(true)
+            ->refreshOnUpdate(false);
     }
 
     public function category(): BelongsTo

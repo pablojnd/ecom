@@ -11,6 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('attributes', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->string('name')->unique(); // Nombre del atributo (ej: Color, Talla)
+            $table->timestamps();
+        });
+
+        Schema::create('attribute_values', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('attribute_id')->constrained('attributes')->onDelete('cascade');
+            $table->string('value'); // Valor del atributo (ej: Rojo, M, Algodón)
+            $table->unique(['attribute_id', 'value']); // Asegura que no haya valores duplicados para el mismo atributo
+            $table->timestamps();
+        });
+
         Schema::create('attribute_products', function (Blueprint $table) {
             $table->foreignUlid('product_id')->constrained('products')->onDelete('cascade');
             $table->foreignUlid('attribute_id')->constrained('attributes')->onDelete('cascade');
@@ -25,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('attribute_products');
+        Schema::dropIfExists('attributes');
     }
 };

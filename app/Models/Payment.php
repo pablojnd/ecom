@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,11 @@ class Payment extends Model
         'order_id',
         'amount',
         'status',
+    ];
+
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'status' => PaymentStatusEnum::class,
     ];
 
     public function order(): BelongsTo

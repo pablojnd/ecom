@@ -25,12 +25,12 @@ class DatabaseSeeder extends Seeder
             BrandSeeder::class,
             CategorySeeder::class,
             ProductSeeder::class,
-            OrderSeeder::class,
-            OrderDetailSeeder::class,
-            PaymentSeeder::class,
             AttributeSeeder::class,
             AttributeValueseeder::class,
             AttributeProductSeeder::class,
+            OrderSeeder::class,
+            OrderDetailSeeder::class,
+            PaymentSeeder::class,
         ]);
     }
 }

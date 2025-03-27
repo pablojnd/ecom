@@ -83,11 +83,29 @@ class ProductResource extends Resource
                                             ->minValue(0)
                                             ->default(0),
                                     ]),
-                                Forms\Components\TextInput::make('price')
-                                    ->required()
-                                    ->numeric()
-                                    ->prefix('$')
-                                    ->step(0.01),
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('price')
+                                            ->required()
+                                            ->numeric()
+                                            ->prefix('$')
+                                            ->step(0.01),
+                                        Forms\Components\TextInput::make('offer_price')
+                                            ->label('Precio oferta')
+                                            ->numeric()
+                                            ->prefix('$')
+                                            ->step(0.01),
+                                    ]),
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Toggle::make('is_active')
+                                            ->label('Activo')
+                                            ->default(true)
+                                            ->helperText('¿Este producto está disponible para la venta?'),
+                                        Forms\Components\DateTimePicker::make('offer_expires_at')
+                                            ->label('Vencimiento oferta')
+                                            ->helperText('Fecha en que expira el precio de oferta'),
+                                    ]),
                             ]),
                         Forms\Components\Tabs\Tab::make('Descripción')
                             ->schema([
@@ -226,6 +244,14 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('price')
                     ->money('USD')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('offer_price')
+                    ->label('Oferta')
+                    ->money('USD')
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('Activo')
+                    ->boolean()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -299,6 +325,12 @@ class ProductResource extends Resource
                                 fn (Builder $query, $price): Builder => $query->where('price', '<=', $price),
                             );
                     }),
+                Tables\Filters\SelectFilter::make('is_active')
+                    ->label('Estado')
+                    ->options([
+                        '1' => 'Activo',
+                        '0' => 'Inactivo',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

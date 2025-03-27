@@ -20,6 +20,11 @@ class OrderDetail extends Model
         'subtotal'
     ];
 
+    protected $casts = [
+        'price' => 'decimal:2',
+        'subtotal' => 'decimal:2'
+    ];
+
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);

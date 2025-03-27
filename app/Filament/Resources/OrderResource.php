@@ -7,6 +7,7 @@ use App\Enums\PaymentStatusEnum;
 use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Models\Order;
+use App\Models\OrderDetail;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -85,15 +86,15 @@ class OrderResource extends Resource
                                         fn (Forms\Components\Actions\Action $action) => $action
                                             ->modalHeading('Crear nuevo cliente')
                                             ->modalWidth('md')
-                                    ),
+                                    )
+                                    ->columnSpanFull(),
 
-                                Forms\Components\TextInput::make('total')
+                                Forms\Components\Placeholder::make('total')
                                     ->label('Total')
-                                    ->required()
-                                    ->numeric()
-                                    ->prefix('$')
-                                    ->disabled()
-                                    ->dehydrated(),
+                                    ->content(function ($record) {
+                                        if (!$record || !$record->exists) return '$0.00';
+                                        return '$' . number_format($record->orderDetails()->sum('subtotal'), 2);
+                                    }),
 
                                 Forms\Components\Placeholder::make('items_count')
                                     ->label('Productos')
@@ -116,6 +117,7 @@ class OrderResource extends Resource
                                                " (" . round(($paidAmount / max(1, $record->total)) * 100) . "%)";
                                     }),
                             ])
+                            ->columns(3)
                             ->columnSpan(['lg' => 2]),
 
                         // Sección lateral (1/3 del ancho)
@@ -141,6 +143,7 @@ class OrderResource extends Resource
                                     ->label('Última actualización')
                                     ->content(fn ($record): string => $record?->updated_at?->diffForHumans() ?? '-'),
                             ])
+                            ->columns(2)
                             ->columnSpan(['lg' => 1]),
                     ])
                     ->columns(['lg' => 3]),
@@ -155,7 +158,7 @@ class OrderResource extends Resource
                     ->label('ID')
                     ->searchable()
                     ->copyable()
-                    ->toggleable(),
+                ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Cliente')
@@ -165,7 +168,10 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->money('USD')
-                    ->sortable(),
+                    ->sortable()
+                    ->getStateUsing(function (Order $record) {
+                        return $record->orderDetails()->sum('subtotal');
+                    }),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')

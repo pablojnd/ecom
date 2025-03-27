@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Enums\OrderStatusEnum;
+use App\Enums\PaymentStatusEnum;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Order extends Model
 {
@@ -19,6 +21,12 @@ class Order extends Model
         'total',
         'status',
         'payment_status',
+    ];
+
+    protected $casts = [
+        'total' => 'decimal:2',
+        'status' => OrderStatusEnum::class,
+        'payment_status' => PaymentStatusEnum::class,
     ];
 
     public function user(): BelongsTo
@@ -41,13 +49,13 @@ class Order extends Model
      *
      * @return self
      */
-    public function recalculateTotal(): self
-    {
-        $total = $this->orderDetails()->sum(DB::raw('price * quantity'));
-        $this->update(['total' => $total]);
+    // public function recalculateTotal(): self
+    // {
+    //     $total = $this->orderDetails()->sum(DB::raw('price * quantity'));
+    //     $this->update(['total' => $total]);
 
-        return $this->fresh();
-    }
+    //     return $this->fresh();
+    // }
 
     /**
      * Actualiza el estado de pago basado en los pagos existentes

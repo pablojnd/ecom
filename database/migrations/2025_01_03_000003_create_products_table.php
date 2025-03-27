@@ -18,8 +18,13 @@ return new class extends Migration
             $table->foreignUlid('category_id')->constrained('categories')->onDelete('cascade');
             $table->string('slug')->unique();
             $table->decimal('price', 10, 2);
+            $table->decimal('offer_price', 10, 2)->nullable();
             $table->string('image_path')->nullable();
             $table->text('description')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->string('sku')->unique()->nullable();
+            $table->integer('stock_quantity')->default(0);
+            $table->dateTime('offer_expires_at')->nullable();
             $table->timestamps();
         });
     }

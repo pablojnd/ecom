@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "83fdabd76ae5c03bf55f361eb1e5c120",
+    "content-hash": "5d1d457eeab8059e88adbea1fa660495",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -71,6 +71,71 @@
                 "source": "https://github.com/AnourValar/eloquent-serialize/tree/1.3.0"
             },
             "time": "2025-03-22T08:49:12+00:00"
+        },
+        {
+            "name": "binary-cats/laravel-sku",
+            "version": "0.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/binary-cats/laravel-sku.git",
+                "reference": "2731e7af6b86e885e29083bcdb8ea8f8e49c6137"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/binary-cats/laravel-sku/zipball/2731e7af6b86e885e29083bcdb8ea8f8e49c6137",
+                "reference": "2731e7af6b86e885e29083bcdb8ea8f8e49c6137",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "~5.6|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "php": "^7.2|^8.0"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^3.6|^4.0|^5.0|^6.0|^7.0|^8.0|^10.0",
+                "phpunit/phpunit": "^7.0|^8.2|^9.0|^10.0|^11.5.3"
+            },
+            "suggest": {
+                "binary-cats/laravel-lob-webhooks": "Handle Lob.com webhooks in your Laravel application",
+                "binary-cats/laravel-mailgun-webhooks": "Handle Mailgun webhooks in your Laravel application"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "BinaryCats\\Sku\\SkuServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "BinaryCats\\Sku\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Cyrill Kalita",
+                    "email": "cyrill.kalita@gmail.com",
+                    "homepage": "https://github.com/binary-cats",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Generate SKUs for Eloquent models",
+            "homepage": "https://github.com/binary-cats/laravel-sku",
+            "keywords": [
+                "binary-cats",
+                "eloquent",
+                "laravel",
+                "sku"
+            ],
+            "support": {
+                "issues": "https://github.com/binary-cats/laravel-sku/issues",
+                "source": "https://github.com/binary-cats/laravel-sku/tree/0.8.0"
+            },
+            "time": "2025-02-19T14:53:53+00:00"
         },
         {
             "name": "blade-ui-kit/blade-heroicons",
