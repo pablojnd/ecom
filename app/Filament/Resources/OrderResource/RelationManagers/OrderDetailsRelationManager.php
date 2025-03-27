@@ -10,6 +10,7 @@ use Filament\Tables;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class OrderDetailsRelationManager extends RelationManager
 {
@@ -44,18 +45,37 @@ class OrderDetailsRelationManager extends RelationManager
                                     ->columnSpan(2)
                                     ->reactive()
                                     ->afterStateUpdated(function ($state, $set, $get) {
-                                        // Obtener el precio del producto si está disponible
-                                        if ($state) {
-                                            $product = \App\Models\Product::find($state);
-                                            if ($product && $product->price) {
-                                                $set('price', $product->price);
+                                        if (!$state) return;
 
-                                                // Actualizar también el subtotal
-                                                $quantity = $get('quantity') ?: 1;
-                                                $set('subtotal', $product->price * $quantity);
-                                            }
-                                        }
+                                        $product = \App\Models\Product::find($state);
+                                        if (!$product) return;
+
+                                        // Usar el método del modelo para obtener el precio efectivo
+                                        $price = $product->getEffectivePrice();
+                                        $set('price', $price);
+
+                                        // Actualizar stock disponible
+                                        $set('available_stock', $product->stock_quantity);
+
+                                        // Actualizar subtotal
+                                        $quantity = $get('quantity') ?: 1;
+                                        $set('subtotal', $price * $quantity);
                                     }),
+
+                                Forms\Components\Placeholder::make('available_stock')
+                                    ->label('Stock disponible')
+                                    ->content(function ($get) {
+                                        $stock = $get('available_stock');
+                                        if ($stock === null) return 'Seleccione un producto';
+
+                                        $colorClass = $stock > 10 ? 'text-success-500' : ($stock > 0 ? 'text-warning-500' : 'text-danger-500');
+
+                                        return view('components.stock-indicator', [
+                                            'stock' => $stock,
+                                            'colorClass' => $colorClass
+                                        ]);
+                                    })
+                                    ->hidden(fn ($get) => !$get('product_id')),
 
                                 Forms\Components\TextInput::make('quantity')
                                     ->label('Cantidad')
@@ -63,14 +83,24 @@ class OrderDetailsRelationManager extends RelationManager
                                     ->numeric()
                                     ->minValue(1)
                                     ->default(1)
-                                    ->reactive()
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, $set, $get) {
-                                        // Calcular subtotal al cambiar cantidad si hay precio
                                         if ($get('price')) {
                                             $subtotal = $state * $get('price');
                                             $set('subtotal', $subtotal);
                                         }
-                                    }),
+                                    })
+                                    ->hint(function ($get) {
+                                        $stock = $get('available_stock');
+                                        if ($stock === null || $stock === '') return null;
+
+                                        $quantity = $get('quantity') ?: 0;
+                                        if ($quantity > $stock) {
+                                            return "Advertencia: La cantidad excede el stock disponible.";
+                                        }
+                                        return null;
+                                    })
+                                    ->hintColor('danger'),
 
                                 Forms\Components\TextInput::make('price')
                                     ->label('Precio')
@@ -80,18 +110,41 @@ class OrderDetailsRelationManager extends RelationManager
                                     ->placeholder('0.00')
                                     ->reactive()
                                     ->afterStateUpdated(function ($state, $set, $get) {
-                                        // Calcular subtotal al cambiar precio si hay cantidad
                                         if ($get('quantity')) {
                                             $subtotal = $state * $get('quantity');
                                             $set('subtotal', $subtotal);
                                         }
-                                    }),
+                                    })
+                                    ->suffixAction(
+                                        Forms\Components\Actions\Action::make('reloadPrice')
+                                            ->icon('heroicon-m-arrow-path')
+                                            ->tooltip('Restablecer precio original')
+                                            ->action(function ($get, $set) {
+                                                $productId = $get('product_id');
+                                                if (!$productId) return;
+
+                                                $product = \App\Models\Product::find($productId);
+                                                if (!$product) return;
+
+                                                // Usar el método del modelo
+                                                $price = $product->getEffectivePrice();
+                                                $set('price', $price);
+
+                                                // Actualizar subtotal
+                                                $quantity = $get('quantity') ?: 1;
+                                                $set('subtotal', $price * $quantity);
+                                            })
+                                    ),
 
                                 Forms\Components\TextInput::make('subtotal')
                                     ->label('Subtotal')
                                     ->prefix('$')
                                     ->disabled()
-                                    ->dehydrated(false),
+                                    ->dehydrated()
+                                    ->reactive(),
+
+                                // Campo oculto para mantener temporalmente el stock disponible
+                                Forms\Components\Hidden::make('available_stock'),
 
                                 Forms\Components\Placeholder::make('product_details')
                                     ->label('Detalles adicionales')
@@ -118,10 +171,23 @@ class OrderDetailsRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('product.name')
             ->columns([
+                Tables\Columns\ImageColumn::make('product.image_path')
+                    ->label('')
+                    ->size(40)
+                    ->square(),
+
                 Tables\Columns\TextColumn::make('product.name')
                     ->label('Producto')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn (Model $record): string => $record->product->sku ?? ''),
+
+                Tables\Columns\TextColumn::make('product.stock_quantity')
+                    ->label('Stock')
+                    ->sortable()
+                    ->badge()
+                    ->color(fn (string $state): string =>
+                        $state > 10 ? 'success' : ($state > 0 ? 'warning' : 'danger')),
 
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Cantidad')
@@ -132,15 +198,38 @@ class OrderDetailsRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('price')
                     ->label('Precio unitario')
-                    ->sortable(),
+                    ->money('USD')
+                    ->sortable()
+                    ->description(function (Model $record): ?string {
+                        // Mostrar precio normal cuando el precio usado es oferta
+                        $product = $record->product;
+                        if (!$product) return null;
+
+                        if ($product->hasValidOffer() && abs($record->price - $product->offer_price) < 0.01) {
+                            return "Normal: $" . number_format($product->price, 2);
+                        }
+
+                        return null;
+                    }),
+
+                Tables\Columns\IconColumn::make('has_offer')
+                    ->label('Oferta')
+                    ->getStateUsing(function (Model $record): bool {
+                        $product = $record->product;
+                        if (!$product) return false;
+
+                        return $product->hasValidOffer();
+                    })
+                    ->boolean()
+                    ->trueIcon('heroicon-o-sparkles')
+                    ->falseIcon('')
+                    ->trueColor('warning'),
 
                 Tables\Columns\TextColumn::make('subtotal')
                     ->label('Subtotal')
-                    // ->getStateUsing(function ($record) {
-                    //     return $record->quantity * $record->price;
-                    // })
+                    ->money('USD')
                     ->summarize([
-                        Sum::make()->label('Precio Total'),
+                        Sum::make()->money()->label('Precio Total'),
                     ]),
 
                 Tables\Columns\TextColumn::make('created_at')
@@ -163,6 +252,11 @@ class OrderDetailsRelationManager extends RelationManager
                     ->stickyModalHeader()
                     ->stickyModalFooter()
                     ->mutateFormDataUsing(function (array $data) {
+                        // Asegurar que el subtotal esté correcto
+                        if (!isset($data['subtotal']) || !$data['subtotal']) {
+                            $data['subtotal'] = $data['price'] * $data['quantity'];
+                        }
+
                         return $data;
                     })
                     ->after(function () {

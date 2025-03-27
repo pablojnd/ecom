@@ -18,6 +18,7 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'order_number',
         'total',
         'status',
         'payment_status',
@@ -28,6 +29,21 @@ class Order extends Model
         'status' => OrderStatusEnum::class,
         'payment_status' => PaymentStatusEnum::class,
     ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function (Order $order) {
+            // Generar número de orden automáticamente si no se ha proporcionado
+            if (empty($order->order_number)) {
+                $order->order_number = 'ORD-' . strtoupper(uniqid());
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {
@@ -49,13 +65,13 @@ class Order extends Model
      *
      * @return self
      */
-    // public function recalculateTotal(): self
-    // {
-    //     $total = $this->orderDetails()->sum(DB::raw('price * quantity'));
-    //     $this->update(['total' => $total]);
+    public function recalculateTotal(): self
+    {
+        $total = $this->orderDetails()->sum('subtotal');
+        $this->update(['total' => $total]);
 
-    //     return $this->fresh();
-    // }
+        return $this->fresh();
+    }
 
     /**
      * Actualiza el estado de pago basado en los pagos existentes

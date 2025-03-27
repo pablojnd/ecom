@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use BinaryCats\Sku\Concerns\SkuOptions;
+use Carbon\Carbon;
 
 class Product extends Model
 {
@@ -89,5 +90,32 @@ class Product extends Model
         return $this->belongsToMany(Attributevalue::class, 'attribute_products', 'product_id', 'attribute_value_id')
             ->withPivot('attribute_id')
             ->withTimestamps();
+    }
+
+    /**
+     * Obtiene el precio efectivo del producto, considerando ofertas vigentes
+     *
+     * @return float
+     */
+    public function getEffectivePrice(): float
+    {
+        // Verificar si tiene precio de oferta y está vigente
+        if ($this->offer_price &&
+            (!$this->offer_expires_at || Carbon::now()->lt($this->offer_expires_at))) {
+            return (float) $this->offer_price;
+        }
+
+        return (float) $this->price;
+    }
+
+    /**
+     * Verifica si el producto tiene una oferta válida actualmente
+     *
+     * @return bool
+     */
+    public function hasValidOffer(): bool
+    {
+        return $this->offer_price &&
+            (!$this->offer_expires_at || Carbon::now()->lt($this->offer_expires_at));
     }
 }

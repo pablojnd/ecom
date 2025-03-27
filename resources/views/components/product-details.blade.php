@@ -49,6 +49,19 @@
                 <span class="font-medium text-gray-600 dark:text-gray-300">Precio:</span>
                 <span class="text-gray-800 dark:text-gray-200 font-bold">${{ number_format($product->price, 2) }}</span>
             </div>
+
+            @if($product->hasValidOffer())
+                <div>
+                    <span class="font-medium text-gray-600 dark:text-gray-300">Oferta:</span>
+                    <span class="text-green-600 dark:text-green-400 font-bold">${{ number_format($product->offer_price, 2) }}</span>
+
+                    @if($product->offer_expires_at)
+                        <span class="text-xs text-gray-500 ml-2">
+                            (Hasta: {{ $product->offer_expires_at->format('d/m/Y') }})
+                        </span>
+                    @endif
+                </div>
+            @endif
         </div>
 
         {{-- Atributos del producto --}}

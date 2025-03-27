@@ -152,7 +152,7 @@ class ProductResource extends Resource
                                                     ->searchable()
                                                     ->preload()
                                                     ->required()
-                                                    ->reactive()
+                                                    ->live(onBlur: true)
                                                     ->afterStateUpdated(fn ($state, $set) => $set('attribute_value_id', null)),
 
                                                 Forms\Components\Select::make('attribute_value_id')
