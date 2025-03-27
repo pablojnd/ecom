@@ -73,6 +73,15 @@ class ProductResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->required(),
+                                        Forms\Components\TextInput::make('sku')
+                                            ->label('SKU')
+                                            ->unique(ignorable: fn ($record) => $record)
+                                            ->required(),
+                                        Forms\Components\TextInput::make('stock_quantity')
+                                            ->label('Existencias')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->default(0),
                                     ]),
                                 Forms\Components\TextInput::make('price')
                                     ->required()
@@ -107,6 +116,83 @@ class ProductResource extends Resource
                                     ->directory('products')
                                     ->hint('Recomendado: 800x800px')
                                     ->columnSpanFull(),
+                            ]),
+                        Forms\Components\Tabs\Tab::make('Atributos')
+                            ->schema([
+                                Forms\Components\Section::make('Atributos del producto')
+                                    ->description('Asigna atributos como color, tamaño, etc. a este producto')
+                                    ->schema([
+                                        Forms\Components\Repeater::make('product_attributes')
+                                            ->label('')
+                                            ->relationship('attributes')
+                                            ->schema([
+                                                Forms\Components\Select::make('attribute_id')
+                                                    ->label('Atributo')
+                                                    ->options(function () {
+                                                        return \App\Models\Attribute::pluck('name', 'id');
+                                                    })
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->required()
+                                                    ->reactive()
+                                                    ->afterStateUpdated(fn ($state, $set) => $set('attribute_value_id', null)),
+
+                                                Forms\Components\Select::make('attribute_value_id')
+                                                    ->label('Valor')
+                                                    ->options(function (callable $get) {
+                                                        $attributeId = $get('attribute_id');
+                                                        if (!$attributeId) return [];
+
+                                                        return \App\Models\Attributevalue::where('attribute_id', $attributeId)
+                                                            ->pluck('value', 'id');
+                                                    })
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->required()
+                                                    ->createOptionForm([
+                                                        Forms\Components\TextInput::make('value')
+                                                            ->label('Valor')
+                                                            ->required(),
+                                                    ])
+                                                    ->createOptionAction(function (Forms\Components\Actions\Action $action, callable $get) {
+                                                        $attributeId = $get('attribute_id');
+                                                        if (!$attributeId) {
+                                                            return $action->hidden();
+                                                        }
+
+                                                        return $action
+                                                            ->modalHeading('Crear nuevo valor')
+                                                            ->modalWidth('md')
+                                                            ->modalSubmitActionLabel('Crear y seleccionar')
+                                                            ->mutateFormDataUsing(function (array $data) use ($attributeId) {
+                                                                $data['attribute_id'] = $attributeId;
+                                                                return $data;
+                                                            });
+                                                    }),
+                                            ])
+                                            ->itemLabel(function (array $state): ?string {
+                                                $attributeName = \App\Models\Attribute::find($state['attribute_id'] ?? null)?->name;
+                                                $valueName = \App\Models\Attributevalue::find($state['attribute_value_id'] ?? null)?->value;
+
+                                                if ($attributeName && $valueName) {
+                                                    return "{$attributeName}: {$valueName}";
+                                                }
+
+                                                return 'Nuevo atributo';
+                                            })
+                                            ->columns(2)
+                                            ->defaultItems(0)
+                                            ->addActionLabel('Agregar atributo')
+                                            ->reorderable()
+                                            ->collapsible()
+                                            ->collapseAllAction(
+                                                fn (Forms\Components\Actions\Action $action) => $action->label('Colapsar todos'),
+                                            )
+                                            ->deleteAction(
+                                                fn (Forms\Components\Actions\Action $action) => $action->requiresConfirmation(),
+                                            )
+                                    ])
+                                    ->collapsible()
                             ]),
                     ])
                     ->columnSpanFull(),
@@ -148,6 +234,35 @@ class ProductResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('attributes_summary')
+                    ->label('Atributos')
+                    ->getStateUsing(function (Product $record): string {
+                        $attributesWithValues = $record->attributeValues()
+                            ->with('attribute')
+                            ->get()
+                            ->map(function ($attributeValue) {
+                                return $attributeValue->attribute->name . ': ' . $attributeValue->value;
+                            })
+                            ->take(3) // Mostrar solo los primeros 3 atributos
+                            ->join(', ');
+
+                        $totalAttributes = $record->attributeValues()->count();
+
+                        if ($totalAttributes > 3) {
+                            $attributesWithValues .= ' (+' . ($totalAttributes - 3) . ' más)';
+                        }
+
+                        return $attributesWithValues ?: 'Sin atributos';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('attributeValues', function (Builder $query) use ($search) {
+                            $query->where('value', 'like', "%{$search}%")
+                                  ->orWhereHas('attribute', function (Builder $query) use ($search) {
+                                      $query->where('name', 'like', "%{$search}%");
+                                  });
+                        });
+                    })
+                    ->toggleable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -208,7 +323,7 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            // RelationManagers\AttributesRelationManager::class,
         ];
     }
 
