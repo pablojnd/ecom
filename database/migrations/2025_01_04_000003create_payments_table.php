@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignUlid('order_id')->constrained('orders')->onDelete('cascade');
             $table->decimal('amount', 10, 2);
             $table->string('status')->default(PaymentStatusEnum::PENDING->value);
+            $table->string('payment_method')->nullable();
             $table->timestamps();
         });
     }

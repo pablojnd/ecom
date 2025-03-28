@@ -19,8 +19,9 @@ class PaymentFactory extends Factory
     {
         return [
             'order_id' => Order::factory(),
-            'amount' => $this->faker->randomFloat(2, 10, 1000),
-            'status' => \App\Enums\PaymentStatusEnum::PENDING,
+            'amount' => fake()->randomFloat(2, 10, 1000),
+            'status' => fake()->randomElement(\App\Enums\PaymentStatusEnum::cases()),
+            'payment_method' => fake()->randomElement(\App\Enums\PaymentMethodEnum::cases()),
         ];
     }
 

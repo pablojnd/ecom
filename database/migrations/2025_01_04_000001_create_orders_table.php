@@ -19,8 +19,6 @@ return new class extends Migration
             $table->foreignUlid('user_id')->constrained('users')->onDelete('cascade');
             $table->decimal('total', 10, 2);
             $table->string('status')->default(OrderStatusEnum::PENDING->value);
-            $table->string('payment_status')->default(PaymentStatusEnum::PENDING->value);
-            $table->string('payment_method')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });
