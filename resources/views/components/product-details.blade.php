@@ -1,16 +1,5 @@
 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 dark:bg-gray-700 dark:border-gray-600">
     <div class="space-y-4">
-        {{-- Imagen del producto --}}
-        @if($product->image_path)
-            <div class="flex justify-center">
-                <img
-                    src="{{ asset($product->image_path) }}"
-                    alt="{{ $product->name }}"
-                    class="h-36 w-auto object-contain rounded-lg"
-                />
-            </div>
-        @endif
-
         {{-- Información básica del producto --}}
         <div class="grid grid-cols-2 gap-2">
             @if($product->sku)
@@ -91,6 +80,22 @@
                 </h4>
                 <div class="text-gray-700 dark:text-gray-300 text-sm mt-1 prose prose-sm max-w-none">
                     {!! $product->description !!}
+                </div>
+            </div>
+        @endif
+
+        {{-- Imagen del producto (ahora después de la descripción y clickeable) --}}
+        @if($product->first_image)
+            <div class="mt-4 border-t border-gray-200 dark:border-gray-600 pt-3">
+                <h4 class="font-medium text-gray-700 dark:text-gray-200 pb-2">Imagen</h4>
+                <div class="flex justify-center">
+                    <a href="{{ asset($product->first_image) }}" target="_blank" title="Ver imagen completa">
+                        <img
+                            src="{{ asset($product->first_image) }}"
+                            alt="{{ $product->name }}"
+                            class="max-h-32 w-auto object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        />
+                    </a>
                 </div>
             </div>
         @endif

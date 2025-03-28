@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use BinaryCats\Sku\Concerns\SkuOptions;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
@@ -37,6 +38,7 @@ class Product extends Model
         'offer_expires_at' => 'datetime',
         'price' => 'decimal:2',
         'offer_price' => 'decimal:2',
+        'image_path' => 'array',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -117,5 +119,30 @@ class Product extends Model
     {
         return $this->offer_price &&
             (!$this->offer_expires_at || Carbon::now()->lt($this->offer_expires_at));
+    }
+
+    /**
+     * Obtiene la ruta de la carpeta donde se almacenan las imágenes de este producto
+     *
+     * @return string
+     */
+    public function getImagesDirectory(): string
+    {
+        $slug = $this->slug ?? Str::slug($this->name);
+        return "products/{$slug}";
+    }
+
+    /**
+     * Obtiene la primera imagen del producto
+     *
+     * @return string
+     */
+    public function getFirstImageAttribute(): string
+    {
+        if (empty($this->image_path) || !is_array($this->image_path)) {
+            return 'images/no-image.png'; // Imagen por defecto
+        }
+
+        return $this->image_path[0] ?? 'images/no-image.png';
     }
 }
