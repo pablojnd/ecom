@@ -20,14 +20,14 @@ class Order extends Model
         'user_id',
         'order_number',
         'total',
-        'status',
-        'payment_status',
+        'order_status',
+        // 'payment_status',
     ];
 
     protected $casts = [
         'total' => 'decimal:2',
-        'status' => OrderStatusEnum::class,
-        'payment_status' => PaymentStatusEnum::class,
+        'order_status' => OrderStatusEnum::class,
+        // 'payment_status' => PaymentStatusEnum::class,
     ];
 
     /**
@@ -38,9 +38,11 @@ class Order extends Model
         parent::boot();
 
         static::creating(function (Order $order) {
-            // Generar número de orden automáticamente si no se ha proporcionado
+            // Generar número de orden numérico si no se ha proporcionado
             if (empty($order->order_number)) {
-                $order->order_number = 'ORD-' . strtoupper(uniqid());
+                // Obtener el último valor numérico y sumar 1r_number') + 1 ?? 10000;
+                $lastOrder = self::max('order_number');
+                $order->order_number = $lastOrder ? ($lastOrder + 1) : 10000; // Comenzar desde 10000
             }
         });
     }
@@ -74,24 +76,76 @@ class Order extends Model
     }
 
     /**
-     * Actualiza el estado de pago basado en los pagos existentes
+     * Actualiza el estado de la orden basado en los pagos existentes
      *
      * @return self
      */
     public function updatePaymentStatus(): self
     {
         $paidAmount = $this->payments()
-            ->where('status', \App\Enums\PaymentStatusEnum::PAID->value)
+            ->where('payment_status', \App\Enums\PaymentStatusEnum::PAID->value)
             ->sum('amount');
 
         if ($paidAmount >= $this->total) {
-            $this->update(['payment_status' => \App\Enums\PaymentStatusEnum::PAID->value]);
+            $this->update(['order_status' => \App\Enums\OrderStatusEnum::COMPLETED->value]);
         } elseif ($paidAmount > 0) {
-            $this->update(['payment_status' => \App\Enums\PaymentStatusEnum::PENDING->value]);
+            $this->update(['order_status' => \App\Enums\OrderStatusEnum::PROCESSING->value]);
         } else {
-            $this->update(['payment_status' => \App\Enums\PaymentStatusEnum::PENDING->value]);
+            $this->update(['order_status' => \App\Enums\OrderStatusEnum::PENDING->value]);
         }
 
         return $this->fresh();
+    }
+
+    /**
+     * Obtiene el porcentaje de pago de la orden
+     *
+     * @return float
+     */
+    public function getPaymentPercentageAttribute(): float
+    {
+        $paidAmount = $this->payments()
+            ->where('payment_status', \App\Enums\PaymentStatusEnum::PAID->value)
+            ->sum('amount');
+
+        return $this->total > 0 ? min(100, round(($paidAmount / $this->total) * 100)) : 0;
+    }
+
+    /**
+     * Obtiene el estado de pago como texto descriptivo
+     *
+     * @return string
+     */
+    public function getPaymentStatusTextAttribute(): string
+    {
+        $percentage = $this->payment_percentage;
+
+        if ($percentage >= 100) {
+            return 'Pagado (100%)';
+        } elseif ($percentage > 0) {
+            return "Pago parcial ({$percentage}%)";
+        } else {
+            return 'Pendiente de pago';
+        }
+    }
+
+    /**
+     * Obtiene el color del estado de pago
+     *
+     * @return string
+     */
+    public function getPaymentStatusColorAttribute(): string
+    {
+        $percentage = $this->payment_percentage;
+
+        if ($percentage >= 100) return 'success';
+        if ($percentage > 0) return 'warning';
+        return 'danger';
+    }
+
+    // Agregar este método si deseas un formato de presentación con prefijo
+    public function getFormattedOrderNumberAttribute(): string
+    {
+        return 'ORD-' . $this->order_number;
     }
 }

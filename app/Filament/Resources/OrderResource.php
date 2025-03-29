@@ -105,16 +105,24 @@ class OrderResource extends Resource
 
                                 Forms\Components\Placeholder::make('payments_status')
                                     ->label('Estado de pagos')
-                                    ->content(function ($record) {
-                                        if (!$record || !$record->exists) return 'Sin pagos';
+                                    ->content(function (Order $record) {
+                                        if (!$record->exists) return 'Sin pagos';
 
                                         $paidAmount = $record->payments()
-                                            ->where('status', PaymentStatusEnum::PAID->value)
+                                            ->where('payment_status', \App\Enums\PaymentStatusEnum::PAID->value)
                                             ->sum('amount');
 
-                                        return "Pagado: $" . number_format($paidAmount, 2) .
-                                               " de $" . number_format($record->total, 2) .
-                                               " (" . round(($paidAmount / max(1, $record->total)) * 100) . "%)";
+                                        $percentage = $record->payment_percentage;
+                                        $statusColor = $percentage >= 100 ? 'success' : ($percentage > 0 ? 'warning' : 'danger');
+                                        $statusText = $record->payment_status_text;
+
+                                        return view('components.payment-status-badge', [
+                                            'amount' => $paidAmount,
+                                            'total' => $record->total,
+                                            'percentage' => $percentage,
+                                            'statusText' => $statusText,
+                                            'statusColor' => $statusColor
+                                        ]);
                                     }),
                             ])
                             ->columns(3)
@@ -123,17 +131,25 @@ class OrderResource extends Resource
                         // Sección lateral (1/3 del ancho)
                         Forms\Components\Section::make('Estado e información')
                             ->schema([
-                                Forms\Components\Select::make('status')
+                                Forms\Components\Select::make('order_status')
                                     ->label('Estado de la orden')
                                     ->options(OrderStatusEnum::class)
                                     ->default(OrderStatusEnum::PENDING)
                                     ->required(),
 
-                                Forms\Components\Select::make('payment_status')
+                                Forms\Components\Placeholder::make('payment_status_display')
                                     ->label('Estado del pago')
-                                    ->options(PaymentStatusEnum::class)
-                                    ->default(PaymentStatusEnum::PENDING)
-                                    ->required(),
+                                    ->content(function (Order $record) {
+                                        if (!$record->exists) return 'Pendiente';
+
+                                        $percentage = $record->payment_percentage;
+                                        $statusColor = $percentage >= 100 ? 'success' : ($percentage > 0 ? 'warning' : 'danger');
+
+                                        return view('components.badge', [
+                                            'label' => $record->payment_status_text,
+                                            'color' => $statusColor,
+                                        ]);
+                                    }),
 
                                 Forms\Components\Placeholder::make('created_at')
                                     ->label('Creada')
@@ -177,9 +193,15 @@ class OrderResource extends Resource
                     ->label('Estado')
                     ->badge(),
 
-                Tables\Columns\TextColumn::make('payment_status')
+                Tables\Columns\TextColumn::make('payment_status_text')
                     ->label('Estado de pago')
-                    ->badge(),
+                    ->badge()
+                    ->color(function (Order $record): string {
+                        $percentage = $record->payment_percentage;
+                        if ($percentage >= 100) return 'success';
+                        if ($percentage > 0) return 'warning';
+                        return 'danger';
+                    }),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creada el')
@@ -228,6 +250,7 @@ class OrderResource extends Resource
         return [
             'index' => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
+            'create-custom' => Pages\CreateOrderCustom::route('/create-custom'),
             // 'view' => Pages\ViewOrder::route('/{record}'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];

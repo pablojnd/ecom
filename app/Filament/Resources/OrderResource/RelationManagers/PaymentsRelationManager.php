@@ -64,9 +64,13 @@ class PaymentsRelationManager extends RelationManager
                     ->money('USD')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('payment_status')
                     ->label('Estado')
                     ->badge(),
+
+                Tables\Columns\TextColumn::make('payment_method')
+                    ->label('Método de pago')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha')
@@ -77,6 +81,10 @@ class PaymentsRelationManager extends RelationManager
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options(PaymentStatusEnum::class),
+
+                Tables\Filters\SelectFilter::make('payment_status')
                     ->label('Estado')
                     ->options(PaymentStatusEnum::class),
             ])

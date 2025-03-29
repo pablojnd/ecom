@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentMethodEnum;
 use App\Enums\PaymentStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -16,12 +17,14 @@ class Payment extends Model
     protected $fillable = [
         'order_id',
         'amount',
-        'status',
+        'payment_status',
+        'payment_method',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'status' => PaymentStatusEnum::class,
+        'payment_status' => PaymentStatusEnum::class,
+        'payment_method' => PaymentMethodEnum::class,
     ];
 
     public function order(): BelongsTo

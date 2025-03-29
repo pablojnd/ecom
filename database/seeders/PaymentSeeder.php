@@ -22,11 +22,12 @@ class PaymentSeeder extends Seeder
                 ->forOrder($order)
                 ->create([
                     'amount' => $order->total,
+                    'payment_status' => \App\Enums\PaymentStatusEnum::PAID->value,
                 ]);
 
-            // Actualizar el estado de pago de la orden
+            // Actualizar el estado de la orden
             $order->update([
-                'payment_status' => \App\Enums\PaymentStatusEnum::PAID,
+                'order_status' => \App\Enums\OrderStatusEnum::COMPLETED->value,
             ]);
         }
     }

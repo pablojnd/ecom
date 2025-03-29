@@ -49,7 +49,7 @@ class OrderSeeder extends Seeder
                     // Crear pago para la orden
                     $order->payments()->create([
                         'amount' => $total,
-                        'status' => \App\Enums\PaymentStatusEnum::PENDING,
+                        'payment_status' => \App\Enums\PaymentStatusEnum::PENDING,
                     ]);
                 });
         }

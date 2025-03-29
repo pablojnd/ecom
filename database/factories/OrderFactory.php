@@ -20,7 +20,7 @@ class OrderFactory extends Factory
         return [
             'user_id' => User::factory(),
             'total' => $this->faker->randomFloat(2, 100, 1000),
-            'status' => \App\Enums\OrderStatusEnum::PENDING,
+            'order_status' => \App\Enums\OrderStatusEnum::PENDING,
             // 'payment_status' => \App\Enums\PaymentStatusEnum::PENDING,
         ];
     }

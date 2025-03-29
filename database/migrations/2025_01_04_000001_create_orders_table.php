@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('order_number')->default(0)->unique();
             $table->foreignUlid('user_id')->constrained('users')->onDelete('cascade');
             $table->decimal('total', 10, 2);
-            $table->string('status')->default(OrderStatusEnum::PENDING->value);
+            $table->string('order_status')->default(OrderStatusEnum::PENDING->value);
             $table->text('notes')->nullable();
             $table->timestamps();
         });
