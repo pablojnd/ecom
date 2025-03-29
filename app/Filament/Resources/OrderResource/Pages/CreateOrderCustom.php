@@ -30,19 +30,19 @@ use Illuminate\Support\Facades\DB;
 class CreateOrderCustom extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-plus-circle';
-    
+
     protected static string $resource = OrderResource::class;
-    
+
     protected static ?string $navigationLabel = 'Crear Orden';
-    
+
     protected static ?string $title = 'Crear Nueva Orden';
-    
+
     protected static ?string $slug = 'orders/create-custom';
-    
+
     protected ?string $heading = 'Crear Nueva Orden';
-    
+
     protected ?string $subheading = 'Complete los detalles para crear una nueva orden';
-    
+
     // State para el formulario completo
     public $data = [
         'user_id' => null,
@@ -50,11 +50,11 @@ class CreateOrderCustom extends Page
         'products' => [],
         'payments' => [],
     ];
-    
+
     public $orderTotal = 0;
     public $paidAmount = 0;
     public $balanceDue = 0;
-    
+
     public function mount()
     {
         $this->form->fill([
@@ -64,7 +64,7 @@ class CreateOrderCustom extends Page
             'payments' => [],
         ]);
     }
-    
+
     public function form(Form $form): Form
     {
         return $form
@@ -104,7 +104,7 @@ class CreateOrderCustom extends Page
                                     ),
                             ])
                             ->columnSpan(['lg' => 2]),
-                            
+
                         // Sección de estado de la orden (1/3 del ancho)
                         Section::make('Estado de la Orden')
                             ->schema([
@@ -113,13 +113,13 @@ class CreateOrderCustom extends Page
                                     ->options(OrderStatusEnum::class)
                                     ->default(OrderStatusEnum::PENDING)
                                     ->required(),
-                                    
+
                                 Placeholder::make('resumen_totales')
                                     ->label('Resumen')
                                     ->content(function ($get, $set) {
                                         // Calcular los totales basados en los productos y pagos actuales
                                         $this->calculateTotals($get, $set);
-                                        
+
                                         return view('components.order-summary', [
                                             'orderTotal' => $this->orderTotal,
                                             'paidAmount' => $this->paidAmount,
@@ -130,7 +130,7 @@ class CreateOrderCustom extends Page
                             ->columnSpan(['lg' => 1]),
                     ])
                     ->columns(['lg' => 3]),
-                    
+
                 // Sección de productos
                 Section::make('Productos')
                     ->schema([
@@ -165,25 +165,25 @@ class CreateOrderCustom extends Page
                                             ->reactive()
                                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                                 if (!$state) return;
-                                                
+
                                                 $product = Product::find($state);
                                                 if (!$product) return;
-                                                
+
                                                 $price = $product->getEffectivePrice();
                                                 $set('price', $price);
                                                 $set('stock_available', $product->stock_quantity);
-                                                
+
                                                 // Actualizar subtotal
                                                 $quantity = $get('quantity') ?: 1;
                                                 $set('subtotal', $price * $quantity);
-                                                
+
                                                 // Re-calcular el total de la orden
                                                 $this->calculateTotals($get, $set);
                                             })
                                             ->columnSpan([
                                                 'md' => 6,
                                             ]),
-                                            
+
                                         TextInput::make('quantity')
                                             ->label('Cantidad')
                                             ->numeric()
@@ -194,14 +194,14 @@ class CreateOrderCustom extends Page
                                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                                 $price = $get('price') ?: 0;
                                                 $set('subtotal', $price * $state);
-                                                
+
                                                 // Re-calcular el total de la orden
                                                 $this->calculateTotals($get, $set);
                                             })
                                             ->columnSpan([
                                                 'md' => 2,
                                             ]),
-                                            
+
                                         TextInput::make('price')
                                             ->label('Precio')
                                             ->numeric()
@@ -211,14 +211,14 @@ class CreateOrderCustom extends Page
                                             ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                                 $quantity = $get('quantity') ?: 1;
                                                 $set('subtotal', $state * $quantity);
-                                                
+
                                                 // Re-calcular el total de la orden
                                                 $this->calculateTotals($get, $set);
                                             })
                                             ->columnSpan([
                                                 'md' => 2,
                                             ]),
-                                            
+
                                         TextInput::make('subtotal')
                                             ->label('Subtotal')
                                             ->numeric()
@@ -228,7 +228,7 @@ class CreateOrderCustom extends Page
                                             ->columnSpan([
                                                 'md' => 2,
                                             ]),
-                                            
+
                                         // Campo oculto para el stock disponible
                                         TextInput::make('stock_available')
                                             ->hidden(),
@@ -242,7 +242,7 @@ class CreateOrderCustom extends Page
                             ->cloneable(false)
                             ->columnSpanFull(),
                     ]),
-                    
+
                 // Sección de pagos
                 Section::make('Pagos')
                     ->schema([
@@ -265,7 +265,7 @@ class CreateOrderCustom extends Page
                                             ->columnSpan([
                                                 'md' => 4,
                                             ]),
-                                            
+
                                         Select::make('payment_method')
                                             ->label('Método de Pago')
                                             ->options(PaymentMethodEnum::class)
@@ -273,7 +273,7 @@ class CreateOrderCustom extends Page
                                             ->columnSpan([
                                                 'md' => 4,
                                             ]),
-                                            
+
                                         Select::make('payment_status')
                                             ->label('Estado')
                                             ->options(PaymentStatusEnum::class)
@@ -300,7 +300,7 @@ class CreateOrderCustom extends Page
             ])
             ->statePath('data');
     }
-    
+
     // Método para calcular totales
     protected function calculateTotals(Get $get, Set $set): void
     {
@@ -309,7 +309,7 @@ class CreateOrderCustom extends Page
         $this->orderTotal = collect($products)->sum(function ($product) {
             return ($product['subtotal'] ?? 0);
         });
-        
+
         // Calcular total pagado
         $payments = $get('payments') ?: [];
         $this->paidAmount = collect($payments)
@@ -317,25 +317,25 @@ class CreateOrderCustom extends Page
                 return ($payment['payment_status'] ?? null) === PaymentStatusEnum::PAID->value;
             })
             ->sum('amount');
-            
+
         // Calcular balance pendiente
         $this->balanceDue = max(0, $this->orderTotal - $this->paidAmount);
     }
-    
+
     public function create()
     {
         $this->validate();
-        
+
         try {
             DB::beginTransaction();
-            
+
             // Crear la orden
             $order = Order::create([
                 'user_id' => $this->data['user_id'],
                 'order_status' => $this->data['order_status'],
                 'total' => $this->orderTotal,
             ]);
-            
+
             // Crear los detalles de la orden
             foreach ($this->data['products'] as $productData) {
                 OrderDetail::create([
@@ -345,7 +345,7 @@ class CreateOrderCustom extends Page
                     'price' => $productData['price'],
                     'subtotal' => $productData['subtotal'],
                 ]);
-                
+
                 // Actualizar el stock del producto
                 $product = Product::find($productData['product_id']);
                 if ($product) {
@@ -354,7 +354,7 @@ class CreateOrderCustom extends Page
                     ]);
                 }
             }
-            
+
             // Crear los pagos
             foreach ($this->data['payments'] as $paymentData) {
                 Payment::create([
@@ -364,22 +364,22 @@ class CreateOrderCustom extends Page
                     'payment_method' => $paymentData['payment_method'],
                 ]);
             }
-            
+
             // Actualizar estado de pago
             $order->updatePaymentStatus();
-            
+
             DB::commit();
-            
+
             Notification::make()
                 ->title('Orden creada con éxito')
                 ->success()
                 ->send();
-                
+
             return redirect()->to(OrderResource::getUrl('edit', ['record' => $order]));
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Notification::make()
                 ->title('Error al crear la orden')
                 ->body($e->getMessage())
@@ -387,21 +387,21 @@ class CreateOrderCustom extends Page
                 ->send();
         }
     }
-    
+
     protected function getFormActions(): array
     {
         return [
             Action::make('save')
                 ->label('Crear Orden')
                 ->submit('create'),
-                
+
             Action::make('cancel')
                 ->label('Cancelar')
                 ->url(OrderResource::getUrl())
                 ->color('gray'),
         ];
     }
-    
+
     public function getMaxContentWidth(): MaxWidth
     {
         return MaxWidth::SevenExtraLarge;
